@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Moon, Sun, Send, Brain } from 'lucide-react';
+import { Moon, Sun, Send, Brain, Trash2 } from 'lucide-react';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([]);
@@ -51,6 +51,10 @@ const ChatInterface = () => {
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
+  const clearChat = () => {
+    setMessages([]);
+  };
+
   return (
     <div className={`flex flex-col h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'} transition-all duration-500`}>
       <header className={`p-4 flex justify-between items-center ${darkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
@@ -58,9 +62,14 @@ const ChatInterface = () => {
           <Brain className={darkMode ? "text-yellow-400" : "text-indigo-600"} size={32} />
           <h1 className="text-2xl font-bold">AI Teaching Assistant</h1>
         </div>
-        <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
-          {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-indigo-600" />}
-        </button>
+        <div className="flex items-center space-x-2">
+          <button onClick={clearChat} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
+            <Trash2 size={24} className={darkMode ? "text-red-400" : "text-red-600"} />
+          </button>
+          <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
+            {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-indigo-600" />}
+          </button>
+        </div>
       </header>
       <div className="flex-grow overflow-auto p-4 space-y-4">
         {messages.map((msg, index) => (
