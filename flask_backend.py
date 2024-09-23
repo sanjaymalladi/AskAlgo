@@ -1,19 +1,25 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
+from dotenv import load_dotenv
+import os
 
+# Load environment variables from .env file
+load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
 # Configure CORS
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
-# Your Gemini API Key
-GOOGLE_API_KEY = "AIzaSyBtHTARCkrN-3yocry5E8hU4d5psrc3p6g"
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+
+# Check if the API key is loaded correctly
+if not GOOGLE_API_KEY:
+    raise ValueError("No API key found. Please set GOOGLE_API_KEY in .env")
 
 # Configure the Gemini API
 genai.configure(api_key=GOOGLE_API_KEY)
-
 # Function to get AI response
 def get_ai_response(user_input):
     prompt = f"You are a Socratic method AI tutor. Your job is to ask questions and guide students to learn data structures and algorithms. User asked: '{user_input}'. Respond with a question or guiding comment."
