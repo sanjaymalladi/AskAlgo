@@ -17,7 +17,7 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "proxy": "http://127.0.0.1:5000"
+    "proxy": "https://askalgo-backend.onrender.com"
   },
   "browserslist": {
     "production": [
