@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configure CORS
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
