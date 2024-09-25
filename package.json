@@ -2,6 +2,7 @@
   "name": "my-react-app",
   "version": "0.1.0",
   "private": true,
+  "proxy": "https://askalgo-backend.onrender.com",
   "dependencies": {
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.15",
@@ -16,9 +17,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "devDependencies": {
-    "proxy": "https://askalgo-backend.onrender.com"
-  },
+  "devDependencies": {},
   "browserslist": {
     "production": [
       ">0.2%",
