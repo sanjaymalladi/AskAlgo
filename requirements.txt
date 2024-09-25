@@ -1,8 +1,0 @@
-Flask
-Flask-CORS
-gunicorn
-python-dotenv
-google-generativeai
-waitress
-grpcio-status==1.66.1
-protobuf==5.26.1
