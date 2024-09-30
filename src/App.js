@@ -1,13 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Moon, Sun, Send, Trash2, PlusCircle } from 'lucide-react';
-import logo from './logo.png';
+import { Moon, Sun, Send, Brain, Trash2, LogOut } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithPopup, GoogleAuthProvider, GithubAuthProvider, signOut } from 'firebase/auth';
+import firebaseConfig from './auth.json';
 
-const ChatInterface = () => {
+// Initialize Firebase with the config from auth.json
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const App = () => {
+  const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [darkMode, setDarkMode] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -27,9 +41,13 @@ const ChatInterface = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch('https://web-production-229e.up.railway.app//ask', {
+      const idToken = await user.getIdToken();
+      const response = await fetch('https://askalgo-backend.onrender.com/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
         body: JSON.stringify({ question: input }),
       });
 
@@ -55,27 +73,72 @@ const ChatInterface = () => {
     setMessages([]);
   };
 
-  const startNewChat = () => {
-    setMessages([]);
-    setInput('');
+  const handleSignIn = async (provider) => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      // Send idToken to your backend for verification
+      const response = await fetch('https://askalgo-backend.onrender.com/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to authenticate with the backend');
+      }
+      console.log("User signed in:", result.user);
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
   };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setMessages([]);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className={`flex flex-col items-center justify-center h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'}`}>
+        <h1 className="text-4xl font-bold mb-8">Welcome to AI Teaching Assistant</h1>
+        <div className="space-y-4">
+          <button 
+            onClick={() => handleSignIn(new GoogleAuthProvider())}
+            className="bg-white text-gray-800 font-bold py-2 px-4 rounded-full shadow hover:bg-gray-100 transition duration-300 w-full"
+          >
+            Sign in with Google
+          </button>
+          <button 
+            onClick={() => handleSignIn(new GithubAuthProvider())}
+            className="bg-gray-800 text-white font-bold py-2 px-4 rounded-full shadow hover:bg-gray-700 transition duration-300 w-full"
+          >
+            Sign in with GitHub
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'} transition-all duration-500`}>
       <header className={`p-4 flex justify-between items-center ${darkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
         <div className="flex items-center space-x-2">
-          <img src={logo} alt="Logo" className="h-10 w-10" /> {/* Logo */}
-          <h1 className="text-2xl font-bold">AskAlgo</h1>
+          <Brain className={darkMode ? "text-yellow-400" : "text-indigo-600"} size={32} />
+          <h1 className="text-2xl font-bold">AI Teaching Assistant</h1>
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={startNewChat} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`} title="Start New Chat">
-            <PlusCircle size={24} className={darkMode ? "text-green-400" : "text-green-600"} />
-          </button>
-          <button onClick={clearChat} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`} title="Clear Chat">
+          <button onClick={clearChat} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
             <Trash2 size={24} className={darkMode ? "text-red-400" : "text-red-600"} />
           </button>
-          <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`} title="Toggle Dark Mode">
+          <button onClick={toggleDarkMode} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
             {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-indigo-600" />}
+          </button>
+          <button onClick={handleSignOut} className={`p-2 rounded-full ${darkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
+            <LogOut size={24} className={darkMode ? "text-red-400" : "text-red-600"} />
           </button>
         </div>
       </header>
@@ -128,4 +191,4 @@ const ChatInterface = () => {
   );
 };
 
-export default ChatInterface;
+export default App;
