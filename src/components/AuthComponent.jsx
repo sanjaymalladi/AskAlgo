@@ -1,9 +1,7 @@
-// src/components/AuthComponent.jsx
 import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, Github } from 'lucide-react';
-import { getAuth, signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
-
-const auth = getAuth();
+import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -30,13 +28,7 @@ const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
       const data = await response.json();
 
       if (response.ok) {
-        if (isSignIn) {
-          // Sign-in successful, handled by onAuthStateChanged in App.jsx
-          console.log("User signed in:", data);
-        } else {
-          // Registration successful, optionally sign in the user
-          console.log("User registered:", data);
-        }
+        console.log(isSignIn ? "User signed in:" : "User registered:", data);
       } else {
         throw new Error(data.error || 'Authentication failed');
       }
@@ -54,7 +46,6 @@ const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
 
-      // Send idToken to your backend for verification
       const response = await fetch('https://askalgo-backend.onrender.com/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +55,6 @@ const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
       if (response.ok) {
         const data = await response.json();
         console.log("User signed in:", data);
-        // The user state is managed by onAuthStateChanged in App.jsx
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to authenticate with the backend');
@@ -77,15 +67,8 @@ const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    const provider = new GoogleAuthProvider();
-    handleOAuthSignIn(provider);
-  };
-
-  const handleGithubSignIn = () => {
-    const provider = new GithubAuthProvider();
-    handleOAuthSignIn(provider);
-  };
+  const handleGoogleSignIn = () => handleOAuthSignIn(new GoogleAuthProvider());
+  const handleGithubSignIn = () => handleOAuthSignIn(new GithubAuthProvider());
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-600 to-blue-500">
