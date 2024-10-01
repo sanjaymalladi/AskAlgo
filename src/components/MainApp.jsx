@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Moon, Sun, Send, Brain, Trash2, LogOut, MessageSquare, Plus } from 'lucide-react';
+import { Moon, Sun, Send, Brain, Trash2, LogOut, MessageSquare, Plus, Menu } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { ref, onValue, push, set } from 'firebase/database';
 import { auth, db } from '../firebase';
@@ -11,6 +11,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
   const [conversations, setConversations] = useState({});
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [error, setError] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -67,7 +68,6 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
 
     try {
       const idToken = await user.getIdToken();
-      console.log('Sending request to backend...');
       const response = await fetch('https://askalgo-backend.onrender.com/ask', {
         method: 'POST',
         headers: { 
@@ -80,21 +80,16 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
         }),
       });
 
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = JSON.parse(responseText);
+      const data = await response.json();
       
       setIsTyping(false);
       const aiMessage = { role: 'ai', content: data.response };
       setMessages(prev => [...prev, aiMessage]);
       
-      // Update or create conversation in Firebase
       const conversationRef = currentConversationId 
         ? ref(db, `users/${user.uid}/conversations/${currentConversationId}`)
         : push(ref(db, `users/${user.uid}/conversations`));
@@ -121,15 +116,20 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
     <div className={`flex flex-col h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'} transition-all duration-500`}>
       <header className={`p-4 flex justify-between items-center ${isDarkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
         <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-2">
+          <button onClick={toggleSidebar} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
+            <Menu size={24} className={isDarkMode ? "text-white" : "text-gray-800"} />
+          </button>
           <Brain className={isDarkMode ? "text-yellow-400" : "text-indigo-600"} size={32} />
           <h1 className="text-2xl font-bold">AskAlgo</h1>
         </div>
-    </div>
         <div className="flex items-center space-x-2">
           <button onClick={clearChat} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
             <Trash2 size={24} className={isDarkMode ? "text-red-400" : "text-red-600"} />
@@ -143,32 +143,34 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
         </div>
       </header>
       <div className="flex flex-grow overflow-hidden">
-        <div className={`w-64 overflow-y-auto p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <h2 className="text-xl font-semibold mb-4">Conversations</h2>
-          <button
-            onClick={createNewChat}
-            className={`w-full text-left p-2 rounded mb-2 ${
-              isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-            }`}
-          >
-            <Plus size={18} className="inline mr-2" />
-            New Chat
-          </button>
-          {Object.entries(conversations).sort((a, b) => b[1].timestamp - a[1].timestamp).map(([id, conversation]) => (
+        {isSidebarOpen && (
+          <div className={`w-64 overflow-y-auto p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300`}>
+            <h2 className="text-xl font-semibold mb-4">Conversations</h2>
             <button
-              key={id}
-              onClick={() => loadConversation(id)}
+              onClick={createNewChat}
               className={`w-full text-left p-2 rounded mb-2 ${
-                currentConversationId === id
-                  ? (isDarkMode ? 'bg-blue-600' : 'bg-indigo-500 text-white')
-                  : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-500 hover:bg-indigo-600 text-white'
               }`}
             >
-              <MessageSquare size={18} className="inline mr-2" />
-              {conversation.messages[0].content.substring(0, 20)}...
+              <Plus size={18} className="inline mr-2" />
+              New Chat
             </button>
-          ))}
-        </div>
+            {Object.entries(conversations).sort((a, b) => b[1].timestamp - a[1].timestamp).map(([id, conversation]) => (
+              <button
+                key={id}
+                onClick={() => loadConversation(id)}
+                className={`w-full text-left p-2 rounded mb-2 ${
+                  currentConversationId === id
+                    ? (isDarkMode ? 'bg-blue-600' : 'bg-indigo-500 text-white')
+                    : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                }`}
+              >
+                <MessageSquare size={18} className="inline mr-2" />
+                {conversation.messages[0].content.substring(0, 20)}...
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex-grow flex flex-col overflow-hidden">
           <div className="flex-grow overflow-auto p-4 space-y-4">
             {messages.map((msg, index) => (
