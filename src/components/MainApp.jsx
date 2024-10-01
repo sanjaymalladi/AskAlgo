@@ -11,7 +11,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
   const [conversations, setConversations] = useState({});
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [error, setError] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -70,14 +70,14 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
       const idToken = await user.getIdToken();
       const response = await fetch('https://askalgo-backend.onrender.com/ask', {
         method: 'POST',
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify({
+        body: JSON.stringify({ 
           question: input,
           conversationId: currentConversationId
-        })
+        }),
       });
 
       if (!response.ok) {
@@ -85,15 +85,15 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
       }
 
       const data = await response.json();
-
+      
       setIsTyping(false);
       const aiMessage = { role: 'ai', content: data.response };
       setMessages(prev => [...prev, aiMessage]);
-
-      const conversationRef = currentConversationId
+      
+      const conversationRef = currentConversationId 
         ? ref(db, `users/${user.uid}/conversations/${currentConversationId}`)
         : push(ref(db, `users/${user.uid}/conversations`));
-
+      
       set(conversationRef, {
         messages: [...messages, userMessage, aiMessage],
         timestamp: Date.now()
@@ -144,13 +144,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
       </header>
       <div className="flex flex-grow overflow-hidden">
         {isSidebarOpen && (
-          <div
-            className={`w-64 overflow-y-auto p-4 transition duration-300 ${
-              isDarkMode ? 'bg-gray-800' : 'bg-white'
-            } transform ease-in-out ${
-              isSidebarOpen ? '' : 'translate-x-full'
-            }`}
-          >
+          <div className={`w-64 overflow-y-auto p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300`}>
             <h2 className="text-xl font-semibold mb-4">Conversations</h2>
             <button
               onClick={createNewChat}
@@ -177,16 +171,15 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
             ))}
           </div>
         )}
-        <div className={`flex-grow flex flex-col overflow-hidden ${isSidebarOpen ? 'pl-64' : ''}`}>
+        <div className="flex-grow flex flex-col overflow-hidden">
           <div className="flex-grow overflow-auto p-4 space-y-4">
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[70%] p-3 rounded-lg shadow-lg ${
-                  msg.role === 'user'
-                    ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-indigo-500 text-white')
+                  msg.role === 'user' 
+                    ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-indigo-500 text-white') 
                     : (isDarkMode ? 'bg-white text-gray-900' : 'bg-white text-gray-800')
-                }`}
-                >
+                }`}>
                   {msg.content}
                 </div>
               </div>
@@ -195,8 +188,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
               <div className="flex justify-start">
                 <div className={`p-3 rounded-lg shadow-lg animate-pulse ${
                   isDarkMode ? 'bg-white bg-opacity-20 text-gray-300' : 'bg-indigo-100 text-gray-800'
-                }`}
-                >
+                }`}>
                   AI is typing...
                 </div>
               </div>
@@ -205,8 +197,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
               <div className="flex justify-center">
                 <div className={`p-3 rounded-lg shadow-lg ${
                   isDarkMode ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800'
-                }`}
-                >
+                }`}>
                   {error}
                 </div>
               </div>
@@ -221,19 +212,16 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about Data Structures and Algorithms..."
                 className={`flex-grow p-3 rounded-lg border-2 border-transparent ${
-                  isDarkMode
-                    ? 'bg-white bg-opacity-20 focus:border-blue-400 placeholder-gray-300 text-white'
+                  isDarkMode 
+                    ? 'bg-white bg-opacity-20 focus:border-blue-400 placeholder-gray-300 text-white' 
                     : 'bg-white focus:border-indigo-400 placeholder-gray-400 text-gray-800'
-                }`}
-                onFocus={() => setIsTyping(true)}
-                onBlur={() => setIsTyping(false)}
+                } focus:outline-none`}
               />
               <button type="submit" className={`p-3 rounded-lg transition-colors duration-300 ${
-                isDarkMode
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                isDarkMode 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
                   : 'bg-indigo-500 text-white hover:bg-indigo-600'
-              }`}
-              >
+              }`}>
                 <Send size={24} />
               </button>
             </div>
@@ -242,4 +230,6 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
       </div>
     </div>
   );
+};
+
 export default MainApp;
