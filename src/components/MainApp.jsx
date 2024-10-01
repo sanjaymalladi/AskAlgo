@@ -91,7 +91,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
       setMessages(prev => [...prev, aiMessage]);
 
       const conversationRef = currentConversationId
-        ? ref(db, `users/<span class="math-inline">\{user\.uid\}/conversations/</span>{currentConversationId}`)
+        ? ref(db, `users/${user.uid}/conversations/${currentConversationId}`)
         : push(ref(db, `users/${user.uid}/conversations`));
 
       set(conversationRef, {
@@ -119,6 +119,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
   return (
     <div className={`flex flex-col h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'} transition-all duration-500`}>
       <header className={`p-4 flex justify-between items-center ${isDarkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
@@ -176,8 +177,6 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
             ))}
           </div>
         )}
-
-        {/* Main content */}
         <div className={`flex-grow flex flex-col overflow-hidden ${isSidebarOpen ? 'pl-64' : ''}`}>
           <div className="flex-grow overflow-auto p-4 space-y-4">
             {messages.map((msg, index) => (
@@ -226,7 +225,8 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
                     ? 'bg-white bg-opacity-20 focus:border-blue-400 placeholder-gray-300 text-white'
                     : 'bg-white focus:border-indigo-400 placeholder-gray-400 text-gray-800'
                 }`}
-                focus:outline-none
+                onFocus={() => setIsTyping(true)}
+                onBlur={() => setIsTyping(false)}
               />
               <button type="submit" className={`p-3 rounded-lg transition-colors duration-300 ${
                 isDarkMode
@@ -242,6 +242,4 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
       </div>
     </div>
   );
-};
-
 export default MainApp;
