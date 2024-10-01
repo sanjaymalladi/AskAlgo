@@ -169,7 +169,10 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
           <div className="flex-grow overflow-auto p-4 space-y-4">
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] p-3 rounded-lg shadow-lg ${msg.role === 'user' ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-indigo-500 text-white') : (isDarkMode ? 'bg-white text-gray-900' : 'bg-white text-gray-800')}`}}>
+                <div className={`max-w-[70%] p-3 rounded-lg shadow-lg ${msg.role === 'user' ? 
+                  isDarkMode ? 'bg-blue-600 text-white' : 'bg-indigo-500 text-white' :
+                  isDarkMode ? 'bg-white text-gray-900' : 'bg-white text-gray-800'
+                }`}>
                   {msg.content}
                 </div>
               </div>
