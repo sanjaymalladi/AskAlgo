@@ -125,9 +125,14 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
     <div className={`flex flex-col h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'} transition-all duration-500`}>
       <header className={`p-4 flex justify-between items-center ${isDarkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
         <div className="flex items-center space-x-2">
-          <Brain className={isDarkMode ? "text-yellow-400" : "text-indigo-600"} size={32} />
-          <h1 className="text-2xl font-bold">AI Teaching Assistant</h1>
-        </div>
+      <Image
+        src="/src/logo.png"
+        alt="AskAlgo Logo"
+        width={32}
+        height={32}
+      />
+      <h1 className="text-2xl font-bold">AskAlgo</h1>
+    </div>
         <div className="flex items-center space-x-2">
           <button onClick={clearChat} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
             <Trash2 size={24} className={isDarkMode ? "text-red-400" : "text-red-600"} />
