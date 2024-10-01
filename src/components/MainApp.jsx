@@ -67,6 +67,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
 
     try {
       const idToken = await user.getIdToken();
+      console.log('Sending request to backend...');
       const response = await fetch('https://askalgo-backend.onrender.com/ask', {
         method: 'POST',
         headers: { 
@@ -79,29 +80,31 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
         }),
       });
 
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
       }
 
-      const data = await response.json();
+      const data = JSON.parse(responseText);
       
-      setTimeout(() => {
-        setIsTyping(false);
-        const aiMessage = { role: 'ai', content: data.response };
-        setMessages(prev => [...prev, aiMessage]);
-        
-        // Update or create conversation in Firebase
-        const conversationRef = currentConversationId 
-          ? ref(db, `users/${user.uid}/conversations/${currentConversationId}`)
-          : push(ref(db, `users/${user.uid}/conversations`));
-        
-        set(conversationRef, {
-          messages: [...messages, userMessage, aiMessage],
-          timestamp: Date.now()
-        });
+      setIsTyping(false);
+      const aiMessage = { role: 'ai', content: data.response };
+      setMessages(prev => [...prev, aiMessage]);
+      
+      // Update or create conversation in Firebase
+      const conversationRef = currentConversationId 
+        ? ref(db, `users/${user.uid}/conversations/${currentConversationId}`)
+        : push(ref(db, `users/${user.uid}/conversations`));
+      
+      set(conversationRef, {
+        messages: [...messages, userMessage, aiMessage],
+        timestamp: Date.now()
+      });
 
-        setCurrentConversationId(currentConversationId || conversationRef.key);
-      }, 1000);
+      setCurrentConversationId(currentConversationId || conversationRef.key);
     } catch (error) {
       console.error('Error:', error);
       setIsTyping(false);
@@ -121,7 +124,21 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
   return (
     <div className={`flex flex-col h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'} transition-all duration-500`}>
       <header className={`p-4 flex justify-between items-center ${isDarkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
-        {/* ... (header content remains the same) ... */}
+        <div className="flex items-center space-x-2">
+          <Brain className={isDarkMode ? "text-yellow-400" : "text-indigo-600"} size={32} />
+          <h1 className="text-2xl font-bold">AI Teaching Assistant</h1>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button onClick={clearChat} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
+            <Trash2 size={24} className={isDarkMode ? "text-red-400" : "text-red-600"} />
+          </button>
+          <button onClick={toggleDarkMode} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
+            {isDarkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-indigo-600" />}
+          </button>
+          <button onClick={handleSignOut} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
+            <LogOut size={24} className={isDarkMode ? "text-red-400" : "text-red-600"} />
+          </button>
+        </div>
       </header>
       <div className="flex flex-grow overflow-hidden">
         <div className={`w-64 overflow-y-auto p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
