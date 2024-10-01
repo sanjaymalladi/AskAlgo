@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, Github } from 'lucide-react';
-import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 
 const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
@@ -17,20 +17,11 @@ const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
     setLoading(true);
 
     try {
-      const endpoint = isSignIn ? '/signin' : '/register';
-      const bodyData = isSignIn ? { email, password } : { email, password, name };
-      const response = await fetch(`https://askalgo-backend.onrender.com${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log(isSignIn ? "User signed in:" : "User registered:", data);
+      if (isSignIn) {
+        await signInWithEmailAndPassword(auth, email, password);
       } else {
-        throw new Error(data.error || 'Authentication failed');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await userCredential.user.updateProfile({ displayName: name });
       }
     } catch (error) {
       setError(error.message);
@@ -43,22 +34,7 @@ const AuthComponent = ({ toggleDarkMode, isDarkMode }) => {
     setError(null);
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
-
-      const response = await fetch('https://askalgo-backend.onrender.com/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("User signed in:", data);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to authenticate with the backend');
-      }
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("OAuth Sign-In Error:", error);
       setError(error.message);
