@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Moon, Sun, Send, Brain, Trash2, LogOut, MessageSquare, Plus, Menu } from 'lucide-react';
+import { Moon, Sun, Send, Brain, Trash2, LogOut, MessageSquare, Plus, Menu, X } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import { ref, onValue, push, set } from 'firebase/database';
+import { ref, onValue, push, set, remove } from 'firebase/database';
 import { auth, db } from '../firebase';
 
 const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
@@ -116,6 +116,19 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
     }
   };
 
+  const deleteConversation = async (conversationId, e) => {
+    e.stopPropagation(); // Prevent triggering loadConversation
+    try {
+      await remove(ref(db, `users/${user.uid}/conversations/${conversationId}`));
+      if (currentConversationId === conversationId) {
+        clearChat();
+      }
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      setError("Failed to delete conversation. Please try again.");
+    }
+  };
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
@@ -143,23 +156,27 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
         </div>
       </header>
       <div className="flex flex-grow overflow-hidden">
-        {isSidebarOpen && (
-          <div className={`w-64 overflow-y-auto p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300`}>
-            <h2 className="text-xl font-semibold mb-4">Conversations</h2>
-            <button
-              onClick={createNewChat}
-              className={`w-full text-left p-2 rounded mb-2 ${
-                isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-              }`}
-            >
-              <Plus size={18} className="inline mr-2" />
-              New Chat
-            </button>
-            {Object.entries(conversations).sort((a, b) => b[1].timestamp - a[1].timestamp).map(([id, conversation]) => (
+        <div 
+          className={`fixed top-[72px] bottom-0 left-0 z-30 w-64 overflow-y-auto p-4 
+            ${isDarkMode ? 'bg-gray-800 bg-opacity-80' : 'bg-white bg-opacity-80'} 
+            backdrop-blur-md transition-transform duration-300 ease-in-out
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <h2 className="text-xl font-semibold mb-4">Conversations</h2>
+          <button
+            onClick={createNewChat}
+            className={`w-full text-left p-2 rounded mb-2 ${
+              isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+            }`}
+          >
+            <Plus size={18} className="inline mr-2" />
+            New Chat
+          </button>
+          {Object.entries(conversations).sort((a, b) => b[1].timestamp - a[1].timestamp).map(([id, conversation]) => (
+            <div key={id} className="flex items-center mb-2">
               <button
-                key={id}
                 onClick={() => loadConversation(id)}
-                className={`w-full text-left p-2 rounded mb-2 ${
+                className={`flex-grow text-left p-2 rounded ${
                   currentConversationId === id
                     ? (isDarkMode ? 'bg-blue-600' : 'bg-indigo-500 text-white')
                     : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
@@ -168,10 +185,18 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
                 <MessageSquare size={18} className="inline mr-2" />
                 {conversation.messages[0].content.substring(0, 20)}...
               </button>
-            ))}
-          </div>
-        )}
-        <div className="flex-grow flex flex-col overflow-hidden">
+              <button
+                onClick={(e) => deleteConversation(id, e)}
+                className={`p-2 ml-2 rounded-full ${
+                  isDarkMode ? 'hover:bg-red-600' : 'hover:bg-red-100'
+                } transition-colors duration-300`}
+              >
+                <X size={18} className={isDarkMode ? "text-red-400" : "text-red-600"} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className={`flex-grow flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
           <div className="flex-grow overflow-auto p-4 space-y-4">
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
