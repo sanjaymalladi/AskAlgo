@@ -1,262 +1,39 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Moon, Sun, Send, Brain, Trash2, LogOut, MessageSquare, Plus, Menu, X } from 'lucide-react';
-import { signOut } from 'firebase/auth';
-import { ref, onValue, push, set, remove } from 'firebase/database';
-import { auth, db } from '../firebase';
+// src/App.jsx
+import React, { useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import AuthComponent from './components/AuthComponent';
+import MainApp from './components/MainApp';
+import firebaseConfig from './auth.json';
 
-const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [conversations, setConversations] = useState({});
-  const [currentConversationId, setCurrentConversationId] = useState(null);
-  const [error, setError] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const messagesEndRef = useRef(null);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-  useEffect(() => {
-    if (user) {
-      const conversationsRef = ref(db, `users/${user.uid}/conversations`);
-      const unsubscribe = onValue(conversationsRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setConversations(snapshot.val());
-        } else {
-          setConversations({});
-        }
-      });
-
-      return () => unsubscribe();
-    }
-  }, [user]);
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      setMessages([]);
-      setConversations({});
-      setCurrentConversationId(null);
-    } catch (error) {
-      console.error("Error signing out:", error);
-      setError("Failed to sign out. Please try again.");
-    }
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-    setCurrentConversationId(null);
-    setError(null);
-  };
-
-  const createNewChat = () => {
-    clearChat();
-    setCurrentConversationId(null);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsTyping(true);
-    setError(null);
-
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch('https://askalgo-backend.onrender.com/ask', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ 
-          question: input,
-          conversationId: currentConversationId
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      setIsTyping(false);
-      const aiMessage = { role: 'ai', content: data.response };
-      setMessages(prev => [...prev, aiMessage]);
-      
-      const conversationRef = currentConversationId 
-        ? ref(db, `users/${user.uid}/conversations/${currentConversationId}`)
-        : push(ref(db, `users/${user.uid}/conversations`));
-      
-      set(conversationRef, {
-        messages: [...messages, userMessage, aiMessage],
-        timestamp: Date.now()
-      });
-
-      setCurrentConversationId(currentConversationId || conversationRef.key);
-    } catch (error) {
-      console.error('Error:', error);
-      setIsTyping(false);
-      setError(`Failed to get AI response: ${error.message}`);
-    }
-  };
-
-  const loadConversation = (conversationId) => {
-    const conversation = conversations[conversationId];
-    if (conversation) {
-      setMessages(conversation.messages);
-      setCurrentConversationId(conversationId);
-      setError(null);
-    }
-  };
-
-  const deleteConversation = async (conversationId, e) => {
-    e.stopPropagation(); // Prevent triggering loadConversation
-    try {
-      await remove(ref(db, `users/${user.uid}/conversations/${conversationId}`));
-      if (currentConversationId === conversationId) {
-        clearChat();
-      }
-    } catch (error) {
-      console.error("Error deleting conversation:", error);
-      setError("Failed to delete conversation. Please try again.");
-    }
-  };
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   return (
-    <div className={`flex flex-col h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-blue-900 text-white' : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800'} transition-all duration-500`}>
-      <header className={`p-4 flex justify-between items-center ${isDarkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
-        <div className="flex items-center space-x-2">
-          <button onClick={toggleSidebar} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
-            <Menu size={24} className={isDarkMode ? "text-white" : "text-gray-800"} />
-          </button>
-          <Brain className={isDarkMode ? "text-yellow-400" : "text-indigo-600"} size={32} />
-          <h1 className="text-2xl font-bold">AskAlgo</h1>
-        </div>
-        <div className="flex items-center space-x-2">
-          <button onClick={clearChat} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
-            <Trash2 size={24} className={isDarkMode ? "text-red-400" : "text-red-600"} />
-          </button>
-          <button onClick={toggleDarkMode} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
-            {isDarkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-indigo-600" />}
-          </button>
-          <button onClick={handleSignOut} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white hover:bg-opacity-20' : 'hover:bg-gray-200'} transition-all duration-300`}>
-            <LogOut size={24} className={isDarkMode ? "text-red-400" : "text-red-600"} />
-          </button>
-        </div>
-      </header>
-      <div className="flex flex-grow overflow-hidden">
-        <div 
-          className={`fixed top-[72px] bottom-0 left-0 z-30 w-64 overflow-y-auto p-4 
-            ${isDarkMode ? 'bg-gray-800 bg-opacity-80' : 'bg-white bg-opacity-80'} 
-            backdrop-blur-md transition-transform duration-300 ease-in-out
-            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        >
-          <h2 className="text-xl font-semibold mb-4">Conversations</h2>
-          <button
-            onClick={createNewChat}
-            className={`w-full text-left p-2 rounded mb-2 ${
-              isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-            }`}
-          >
-            <Plus size={18} className="inline mr-2" />
-            New Chat
-          </button>
-          {Object.entries(conversations).sort((a, b) => b[1].timestamp - a[1].timestamp).map(([id, conversation]) => (
-            <div key={id} className="flex items-center mb-2">
-              <button
-                onClick={() => loadConversation(id)}
-                className={`flex-grow text-left p-2 rounded ${
-                  currentConversationId === id
-                    ? (isDarkMode ? 'bg-blue-600' : 'bg-indigo-500 text-white')
-                    : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
-                }`}
-              >
-                <MessageSquare size={18} className="inline mr-2" />
-                {conversation.messages && conversation.messages.length > 0
-                  ? conversation.messages[0].content.substring(0, 20) + '...'
-                  : 'Empty conversation'}
-              </button>
-              <button
-                onClick={(e) => deleteConversation(id, e)}
-                className={`p-2 ml-2 rounded-full ${
-                  isDarkMode ? 'hover:bg-red-600' : 'hover:bg-red-100'
-                } transition-colors duration-300`}
-              >
-                <X size={18} className={isDarkMode ? "text-red-400" : "text-red-600"} />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className={`flex-grow flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-          <div className="flex-grow overflow-auto p-4 space-y-4">
-            {messages.map((msg, index) => (
-              <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] p-3 rounded-lg shadow-lg ${
-                  msg.role === 'user' 
-                    ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-indigo-500 text-white') 
-                    : (isDarkMode ? 'bg-white text-gray-900' : 'bg-white text-gray-800')
-                }`}>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className={`p-3 rounded-lg shadow-lg animate-pulse ${
-                  isDarkMode ? 'bg-white bg-opacity-20 text-gray-300' : 'bg-indigo-100 text-gray-800'
-                }`}>
-                  AI is typing...
-                </div>
-              </div>
-            )}
-            {error && (
-              <div className="flex justify-center">
-                <div className={`p-3 rounded-lg shadow-lg ${
-                  isDarkMode ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800'
-                }`}>
-                  {error}
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-          <form onSubmit={handleSubmit} className={`p-4 ${isDarkMode ? 'bg-opacity-30' : 'bg-white bg-opacity-70'} backdrop-blur-md`}>
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about Data Structures and Algorithms..."
-                className={`flex-grow p-3 rounded-lg border-2 border-transparent ${
-                  isDarkMode 
-                    ? 'bg-white bg-opacity-20 focus:border-blue-400 placeholder-gray-300 text-white' 
-                    : 'bg-white focus:border-indigo-400 placeholder-gray-400 text-gray-800'
-                } focus:outline-none`}
-              />
-              <button type="submit" className={`p-3 rounded-lg transition-colors duration-300 ${
-                isDarkMode 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'bg-indigo-500 text-white hover:bg-indigo-600'
-              }`}>
-                <Send size={24} />
-              </button>
-            </div>
-          </form>
-        </div>
+    <div className={isDarkMode ? 'dark' : ''}>
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'} transition-colors duration-500`}>
+        {user ? (
+          <MainApp user={user} toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+        ) : (
+          <AuthComponent toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+        )}
       </div>
     </div>
   );
 };
 
-export default MainApp;
+export default App;
