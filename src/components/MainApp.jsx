@@ -183,7 +183,9 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
                 }`}
               >
                 <MessageSquare size={18} className="inline mr-2" />
-                {conversation.messages[0].content.substring(0, 20)}...
+                {conversation.messages && conversation.messages.length > 0
+                  ? conversation.messages[0].content.substring(0, 20) + '...'
+                  : 'Empty conversation'}
               </button>
               <button
                 onClick={(e) => deleteConversation(id, e)}
