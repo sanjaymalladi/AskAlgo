@@ -68,7 +68,7 @@ const MainApp = ({ user, toggleDarkMode, isDarkMode }) => {
 
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch('https://ask-algo-backend.vercel.app//ask', {
+      const response = await fetch('https://askalgo-backend.onrender.com//ask', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
